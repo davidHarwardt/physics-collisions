@@ -4,7 +4,7 @@ import { Vec2 } from '@david.harwardt/math';
 import { Color } from '@david.harwardt/color';
 
 const canvas = Canvas2d.fromParent(document.body);
-const size = new CanvasFullscreenSize(canvas.element);
+new CanvasFullscreenSize(canvas.element);
 
 let settings = {
     wallsResetVel: false,
@@ -17,14 +17,18 @@ let currentMass: number = 1;
 let selectedItem: CircleObject | undefined;
 let freq = 10;
 let lineWidth = 1 / 2;
+let elastic = true;
 
 // {
+    const elasticInput = document.querySelector<HTMLInputElement>(".elastic-input")!;
+    elasticInput.addEventListener("input", _ => elastic = elasticInput.checked);
+
     const drawFreqDisplay = document.querySelector<HTMLSpanElement>(".draw-freq-display")!;
     const drawFreqInputRange = document.querySelector<HTMLInputElement>(".draw-freq-input-range")!;
     const drawFreqInputNumber = document.querySelector<HTMLInputElement>(".draw-freq-input-number")!;
 
-    drawFreqInputNumber.addEventListener("input", ev => updateFreq(drawFreqInputNumber.value as unknown as number));
-    drawFreqInputRange.addEventListener("input", ev => updateFreq(drawFreqInputRange.value as unknown as number));
+    drawFreqInputNumber.addEventListener("input", _ => updateFreq(drawFreqInputNumber.value as unknown as number));
+    drawFreqInputRange.addEventListener("input", _ => updateFreq(drawFreqInputRange.value as unknown as number));
 
     function updateFreq(v: number) {
         v = parseInt(v as any);
@@ -35,7 +39,7 @@ let lineWidth = 1 / 2;
     }
 
     const wallReflectInput = document.querySelector<HTMLInputElement>(".wall-reflect-input")!;
-    wallReflectInput.addEventListener("input", ev => { settings.wallsResetVel = !wallReflectInput.checked });
+    wallReflectInput.addEventListener("input", _ => { settings.wallsResetVel = !wallReflectInput.checked });
 
     const clearBtn = document.querySelector<HTMLDivElement>(".clear-btn")!;
     clearBtn.addEventListener("click", _ => objects.forEach(v => v["points"] = []));
@@ -170,9 +174,13 @@ class CircleObject {
 
                 canvas.drawCircle(nextPos, 5, { color: Color.blue });
 
-                let vel = this.vel.multS(this.mass - obj.mass).add(obj.vel.multS(2 * obj.mass)).divS(this.mass + obj.mass);
-                // let vel = (this.impulse.add(obj.impulse)).divS(this.mass + obj.mass);
-                this.nextVel = vel;
+                if(elastic) {
+                    let vel = this.vel.multS(this.mass - obj.mass).add(obj.vel.multS(2 * obj.mass)).divS(this.mass + obj.mass);
+                    this.nextVel = vel;
+                } else {
+                    let vel = (this.impulse.add(obj.impulse)).divS(this.mass + obj.mass);
+                    this.nextVel = vel;
+                }
                 // this.nextVel = CircleObject.reflect(this.vel, coll.normal);
             }
         }
@@ -181,7 +189,7 @@ class CircleObject {
     }
 
     public lateUpdate(dt: number) {
-
+        dt;
         this.vel = this.nextVel;
         if(this.points.length < 1 || this.points[this.points.length - 1].pos.sub(this.pos).magnitude() > 1) {
             this.points.push({ time, pos: this.pos });
